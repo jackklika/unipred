@@ -1,0 +1,9 @@
+[package]
+name = "unipred-core"
+version = "0.1.0"
+edition = "2024"
+description = "Unified prediction market domain models and toolset"
+license = "MIT"
+repository = "https://github.com/jackklika/unipred"
+
+[dependencies]

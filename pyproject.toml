@@ -1,14 +1,16 @@
+[build-system]
+requires = ["maturin>=1.5,<2.0"]
+build-backend = "maturin"
+
 [project]
 name = "unipred"
-version = "0.0.1"
+version = "0.1.0"
 description = "Unified prediction market domain models and toolset"
+authors = [{name = "Jack", email = "jack@example.com"}]
 readme = "README.md"
-authors = [
-    { name = "Jack", email = "7218605+jackklika@users.noreply.github.com" }
-]
-requires-python = ">=3.13"
-dependencies = []
+requires-python = ">=3.8"
 
-[build-system]
-requires = ["uv_build>=0.9.1,<0.10.0"]
-build-backend = "uv_build"
+[tool.maturin]
+python-source = "python"
+module-name = "unipred.unipred_py"
+manifest-path = "unipred-py/Cargo.toml"

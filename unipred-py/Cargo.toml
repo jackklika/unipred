@@ -1,0 +1,20 @@
+[package]
+name = "unipred-py"
+version = "0.1.0"
+edition = "2021"
+description = "Python bindings for unipred-core"
+license = "MIT"
+repository = "https://github.com/jackklika/unipred"
+
+# bindings are typically distributed via PyPI
+publish = false
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+name = "unipred_py"
+crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.23.0", features = ["extension-module"] }
+unipred-core = { path = "../unipred-core" }

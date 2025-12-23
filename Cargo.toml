@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "unipred-core",
+    "unipred-py",
+]
+resolver = "2"
