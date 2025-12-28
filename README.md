@@ -2,6 +2,10 @@
 
 This project demonstrates a hybrid Rust/Python architecture similar to Pydantic V2.
 
+## Goals
+
+- **Local-first**: Give library users full control of state, so we respect all terms and conditions of api usage.
+
 ## Structure
 
 - **python/unipred**: The high-level Python API.

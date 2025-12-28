@@ -1,9 +1,37 @@
 [package]
 name = "unipred-core"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 description = "Unified prediction market domain models and toolset"
 license = "MIT"
 repository = "https://github.com/jackklika/unipred"
 
 [dependencies]
+# Core async/http
+reqwest = { version = "0.12", features = ["json"] }
+tokio = { version = "1", features = ["full"] }
+ureq = { version = "2.10.1", features = ["json", "charset"] }
+anyhow = "1.0.93"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde-json-fmt = "0.1.0"
+
+# Math & Crypto
+rand = "0.8.5"
+base64 = "0.22"
+sha2 = "0.10.8"
+sha1 = "0.10.6"
+hmac = "0.12.1"
+rsa = { version = "0.9.6", features = ["sha2"] }
+uuid = { version = "1.5.0", features = ["v4", "fast-rng"] }
+rust_decimal = { version = "1.36.0", features = ["serde-with-str"] }
+chrono = { version = "0.4.38", features = ["serde"] }
+
+# Alloy (Polymarket)
+alloy-primitives = "0.8.12"
+alloy-sol-types = { version = "0.8.12", features = ["eip712-serde", "json"] }
+alloy-signer = { version = "0.7.2", features = ["eip712"] }
+alloy-signer-local = { version = "0.7.2", features = ["eip712"] }
+async-trait = "0.1.89"

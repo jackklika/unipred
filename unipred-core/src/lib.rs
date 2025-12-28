@@ -1,28 +1,21 @@
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+pub mod clients;
+pub mod commands;
+pub mod domain;
+
+use clients::kalshi::{Kalshi, TradingEnvironment};
+use clients::polymarket::ClobClient;
 
 pub struct UnipredCore {
-    config: String,
+    pub kalshi: Kalshi,
+    pub polymarket: ClobClient,
 }
 
 impl UnipredCore {
-    pub fn new(config: String) -> Self {
-        Self { config }
-    }
-
-    pub fn execute(&self) -> String {
-        format!("Executing with config: {}", self.config)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
+    pub fn new(_config: String) -> Self {
+        // In a real app, parse config to set up auth/environments
+        Self {
+            kalshi: Kalshi::new(TradingEnvironment::DemoMode),
+            polymarket: ClobClient::new("https://clob.polymarket.com"),
+        }
     }
 }
