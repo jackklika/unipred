@@ -140,10 +140,23 @@ impl Kalshi {
                 panic!("Internal Parse Error, please contact developer!");
             });
 
-        let result: PublicMarketsResponse = self
-            .client
-            .get(markets_url)
-            .header("Authorization", self.curr_token.clone().unwrap())
+        let mut path_str = "/markets".to_string();
+        if let Some(query) = markets_url.query() {
+            path_str.push('?');
+            path_str.push_str(query);
+        }
+
+        let mut request = self.client.get(markets_url);
+
+        if self.has_api_key() {
+            let headers = self.get_api_key_headers("GET", &path_str)?;
+            request = request.headers(headers);
+        } else {
+            let token = self.curr_token.as_ref().ok_or(KalshiError::NotAuthenticated)?;
+            request = request.header("Authorization", token);
+        }
+
+        let result: PublicMarketsResponse = request
             .send()
             .await?
             .json()
@@ -716,7 +729,7 @@ mod tests {
     async fn test_get_market_orderbook_integration() -> Result<(), Box<dyn std::error::Error>> {
         let mut kalshi_instance = Kalshi::new(TradingEnvironment::LiveMarketMode);
 
-        kalshi_instance.login_apikey(
+        kalshi_instance.login_apikey_from_path(
             "781b22fe-42c4-4c51-a9a0-83dca85acdd8",
             "/Users/jack/Downloads/korder_apikey.txt"
         ).await?;

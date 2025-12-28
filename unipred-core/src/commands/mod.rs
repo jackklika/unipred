@@ -1,4 +1,5 @@
 pub mod quote;
+pub mod kalshi;
 
 use async_trait::async_trait;
 use crate::UnipredCore;

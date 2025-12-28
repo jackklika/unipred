@@ -14,7 +14,7 @@ impl UnipredCore {
     pub fn new(_config: String) -> Self {
         // In a real app, parse config to set up auth/environments
         Self {
-            kalshi: Kalshi::new(TradingEnvironment::DemoMode),
+            kalshi: Kalshi::new(TradingEnvironment::LiveMarketMode),
             polymarket: ClobClient::new("https://clob.polymarket.com"),
         }
     }

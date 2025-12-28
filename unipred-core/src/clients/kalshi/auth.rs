@@ -68,15 +68,32 @@ impl<'a> Kalshi {
     ///
     /// # Example
     /// ```
-    /// kalshi_instance.login_apikey("your_key_id", "/path/to/your/private.key").await?;
+    /// kalshi_instance.login_apikey_from_path("your_key_id", "/path/to/your/private.key").await?;
     /// ```
-    pub async fn login_apikey(
+    pub async fn login_apikey_from_path(
         &mut self,
         key_id: &str,
         private_key_path: &str,
     ) -> Result<(), KalshiError> {
         let pem_str = fs::read_to_string(private_key_path)?;
         let private_key = RsaPrivateKey::from_pkcs1_pem(&pem_str)?;
+
+        self.private_key = Some(Arc::new(private_key));
+        self.api_key_id = Some(key_id.to_string());
+
+        // Clear email/password auth
+        self.curr_token = None;
+        self.member_id = None;
+
+        Ok(())
+    }
+
+    pub async fn login_apikey(
+        &mut self,
+        key_id: &str,
+        private_key: &str,
+    ) -> Result<(), KalshiError> {
+        let private_key = RsaPrivateKey::from_pkcs1_pem(&private_key)?;
 
         self.private_key = Some(Arc::new(private_key));
         self.api_key_id = Some(key_id.to_string());
