@@ -1,3 +1,7 @@
+"""
+Operations to populate and update LLM context
+"""
+
 from collections.abc import Collection
 from dataclasses import dataclass
 from pathlib import Path
@@ -13,6 +17,10 @@ class ContextFile:
 
 CONTEXTS = [
     ContextFile("kalshi_openapi.yaml", "https://docs.kalshi.com/openapi.yaml"),
+    ContextFile(
+        "polymarket_clob_openapi.yaml",
+        "https://docs.polymarket.com/api-reference/clob-subset-openapi.yaml",
+    ),
 ]
 
 def refresh_context(contexts: Collection[ContextFile]) -> None:

@@ -1,7 +1,9 @@
+use prost::Message;
 use pyo3::prelude::*;
+use pyo3::types::PyBytes;
 use unipred_core::UnipredCore as CoreUnipred;
 use unipred_core::commands::quote::GetMarketQuote;
-use unipred_core::commands::kalshi::FetchKalshiMarkets;
+use unipred_core::commands::markets::FetchMarkets;
 use unipred_core::commands::Command;
 
 #[pyclass]
@@ -42,17 +44,24 @@ impl UnipredCore {
         }
     }
 
-    #[pyo3(signature = (limit=100, cursor=None, status=None, min_close_ts=None, max_close_ts=None))]
-    fn fetch_kalshi_markets(
-        &self, 
-        limit: i64, 
+    #[pyo3(signature = (exchange=None, limit=100, cursor=None, status=None))]
+    fn _fetch_markets_bytes(
+        &self,
+        exchange: Option<String>,
+        limit: i64,
         cursor: Option<String>,
         status: Option<String>,
-        min_close_ts: Option<i64>,
-        max_close_ts: Option<i64>
-    ) -> PyResult<String> {
-        let mut cmd = FetchKalshiMarkets::new()
-            .with_limit(limit);
+    ) -> PyResult<Py<PyBytes>> {
+        let source = match exchange.as_deref() {
+            Some("kalshi") => Some(unipred_core::domain::MarketSource::Kalshi),
+            Some("polymarket") => Some(unipred_core::domain::MarketSource::Polymarket),
+            Some(s) => return Err(pyo3::exceptions::PyValueError::new_err(format!("Unknown exchange: {}", s))),
+            None => None,
+        };
+
+        let mut cmd = FetchMarkets::new()
+            .with_limit(limit)
+            .with_exchange(source);
         
         if let Some(c) = cursor {
             cmd = cmd.with_cursor(c);
@@ -60,31 +69,25 @@ impl UnipredCore {
         if let Some(s) = status {
             cmd = cmd.with_status(s);
         }
-        if let Some(ts) = min_close_ts {
-            cmd = cmd.with_min_close_ts(ts);
-        }
-        if let Some(ts) = max_close_ts {
-            cmd = cmd.with_max_close_ts(ts);
-        }
 
         let result = self.rt.block_on(async {
             cmd.execute(&self.inner).await
         });
 
         match result {
-            Ok((next_cursor, markets)) => {
-                let response = serde_json::json!({
-                    "cursor": next_cursor,
-                    "markets": markets
-                });
-                Ok(response.to_string())
-            },
+            Ok(fetched_market_list) => {
+                let mut buf = Vec::new();
+                fetched_market_list
+                    .encode(&mut buf)
+                    .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+                Python::with_gil(|py| Ok(PyBytes::new(py, &buf).into()))
+            }
             Err(e) => Err(pyo3::exceptions::PyRuntimeError::new_err(e.to_string())),
         }
     }
 
     #[pyo3(signature = (ticker, exchange=None))]
-    fn get_quote(&self, ticker: String, exchange: Option<String>) -> PyResult<String> {
+    fn _get_quote_bytes(&self, ticker: String, exchange: Option<String>) -> PyResult<Py<PyBytes>> {
         let source = match exchange.as_deref() {
             Some("kalshi") => Some(unipred_core::domain::MarketSource::Kalshi),
             Some("polymarket") => Some(unipred_core::domain::MarketSource::Polymarket),
@@ -100,7 +103,11 @@ impl UnipredCore {
         });
 
         match result {
-            Ok(quote) => Ok(format!("{:?}", quote)),
+            Ok(quote) => {
+                let mut buf = Vec::new();
+                quote.encode(&mut buf).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+Python::with_gil(|py| Ok(PyBytes::new(py, &buf).into()))
+            },
             Err(e) => Err(pyo3::exceptions::PyRuntimeError::new_err(e.to_string())),
         }
     }

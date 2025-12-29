@@ -35,3 +35,13 @@ alloy-sol-types = { version = "0.8.12", features = ["eip712-serde", "json"] }
 alloy-signer = { version = "0.7.2", features = ["eip712"] }
 alloy-signer-local = { version = "0.7.2", features = ["eip712"] }
 async-trait = "0.1.89"
+prost = "0.14.1"
+prost-types = "0.14.1"
+
+[build-dependencies]
+prost-build = "0.14.1"
+
+[dev-dependencies]
+dotenv = "0.15.0"
+tempfile = "3.24.0"
+tokio = { version = "1", features = ["full"] }

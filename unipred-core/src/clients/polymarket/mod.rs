@@ -220,7 +220,7 @@ impl ClobClient {
                     token_id, e, text
                 );
                 eprintln!("{}", err_msg);
-                panic!("{}", err_msg);
+                Err(anyhow!("{}", err_msg))
             }
         }
     }
@@ -424,14 +424,25 @@ impl ClobClient {
     }
 
     pub async fn get_order_book(&self, token_id: &str) -> ClientResult<OrderBookSummary> {
-        Ok(self
+        let resp = self
             .http_client
             .get(format!("{}/book", &self.host))
             .query(&[("token_id", token_id)])
             .send()
-            .await?
-            .json::<OrderBookSummary>()
-            .await?)
+            .await?;
+
+        let text = resp.text().await?;
+        match serde_json::from_str::<OrderBookSummary>(&text) {
+            Ok(book) => Ok(book),
+            Err(e) => {
+                let err_msg = format!(
+                    "Failed to decode orderbook response for {}: {}. Body: {}",
+                    token_id, e, text
+                );
+                eprintln!("{}", err_msg);
+                Err(anyhow!("{}", err_msg))
+            }
+        }
     }
 
     pub async fn get_order_books(

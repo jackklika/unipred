@@ -3,7 +3,7 @@ import pytest
 import tempfile
 from collections.abc import Generator
 from dotenv import load_dotenv
-from unipred.unipred_py import UnipredCore
+from unipred import UnipredCore
 
 # Load environment variables from .env file if present
 load_dotenv()

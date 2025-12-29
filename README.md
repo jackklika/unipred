@@ -1,50 +1,80 @@
 # Unipred
 
+Unified python library for prediction market exchange operations.
+
+Intended to used for low-latency applications and local-first research.
+
 This project demonstrates a hybrid Rust/Python architecture similar to Pydantic V2.
 
 ## Goals
 
-- **Local-first**: Give library users full control of state, so we respect all terms and conditions of api usage.
+- **Local-first**: Give library users full control of state and data, so we can run analytical operations on local data and also respect all terms and conditions of api usage.
+- **Fast**: Run operations quickly, putting as little latency as possible between the exchange and user intent.
+- **Multi-language**: Requests for market data and responses are stored in protobuf format, allowing working with the same operations from rust, python, and data formats.
 
-## Structure
+## High Level Structure
 
-- **python/unipred**: The high-level Python API.
-- **unipred-core**: Pure Rust domain logic. Publishable to crates.io.
-- **unipred-py**: Rust-to-Python bindings using PyO3. Used to build the Python extension.
+- Communication with exchanges happens in the rust core `clients` module
+- UnipredCore is defined in rust, which is the broker of all commands and responses in the application.
+- Exchange-specific operations or data is mapped to shared domain objects in rust
+- Rust project at `/unipred-py` exposes internal python bindings
+- `python/unipred/commands` exposes public functions which wrap the rust core, and perform the protobuf serialization/deserialization in the python runtime
+
+## Project Structure
+
+- **proto**: Protobuf definitions for data, requests, and responses
+- **unipred-core**: Rust domain logic, including clients and mapping from exchange-specific operations to unipred domain objects.
+- **unipred-py**: Python bindings for unipred-core 
+- **python/unipred**: The high-level Python API, mostly wrapping the rust core.
+- **context**: LLM context for development
+
 
 ## Development
 
 ### Prerequisites
+1.  **Rust**: [Install Rust](https://www.rust-lang.org/tools/install).
+2.  **uv**: [Install uv](https://github.com/astral-sh/uv).
+3.  **Protocol Buffers Compiler (`protoc`)**:
+    *   **macOS**: `brew install protobuf`
+    *   **Ubuntu/Debian**: `apt install -y protobuf-compiler`
+    *   **Windows**: [Download release](https://github.com/protocolbuffers/protobuf/releases) and add `bin` to PATH.
 
-- Rust (cargo)
-- Python >= 3.8
-- maturin (`pip install maturin`)
+### Installation
 
-### Building
+1.  **Sync Python dependencies:**
+    ```bash
+    uv sync
+    ```
 
-To build the Python package with the Rust extension:
+2.  **Generate Python Protobuf definitions:**
+    *This step generates the `market_quote_pb2.py` file required by the Python wrapper.*
+    ```bash
+    uv run protoc -I=proto --python_out=python/unipred proto/market_quote.proto
+    ```
 
-```bash
-maturin develop
+3.  **Build the Rust extension:**
+    *This compiles the Rust code (including Rust Protobufs) and installs it into the virtual environment.*
+    ```bash
+    uv run maturin develop
+    ```
+
+### Configuration
+
+Create a `.env` file in the root directory for integration tests or normal usage:
+
+```ini
+# Required for Kalshi integration tests
+KALSHI_API_KEY_ID="your_key_id"
+KALSHI_PRIVATE_KEY="-----BEGIN RSA PRIVATE KEY-----
+...
+-----END RSA PRIVATE KEY-----"
 ```
 
-This installs the package into your current virtual environment.
+There is also functionality to load api key from a file.
 
-### Testing
+### Running Tests
 
-**Rust:**
-
-```bash
-cargo test
-```
-
-**Python:**
+Run the full test suite:
 
 ```bash
-python -c "import unipred; print(unipred.hello())"
-```
-
-## Publishing
-
-- **PyPI**: Use `maturin publish`.
-- **Crates.io**: Use `cargo publish -p unipred-core`.
+uv run pytest

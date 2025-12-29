@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package unipred;
+
+message MarketQuote {
+  string ticker = 1;
+  string source = 2; // "Kalshi" or "Polymarket"
+  string price = 3;  // Decimal string to preserve precision
+  string bid = 4;    // Optional decimal string
+  string ask = 5;    // Optional decimal string
+  string volume = 6; // Optional decimal string
+  string timestamp = 7; // ISO 8601 timestamp string
+}
+
+message FetchedMarket {
+  string ticker = 1;
+  string title = 2;
+  string source = 3; // "Kalshi" or "Polymarket"
+  string status = 4; // "active" or "closed"
+}
+
+message FetchedMarketList {
+  string cursor = 1;
+  repeated FetchedMarket markets = 2;
+}
