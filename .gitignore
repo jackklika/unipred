@@ -22,6 +22,9 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+# dbs
+*.db
+
 # Virtual Environments
 .env
 .venv
