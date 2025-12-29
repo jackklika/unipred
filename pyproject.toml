@@ -19,3 +19,8 @@ dependencies = [
 python-source = "python"
 module-name = "unipred.unipred_py"
 manifest-path = "unipred-py/Cargo.toml"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]

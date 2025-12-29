@@ -20,33 +20,11 @@ impl Kalshi {
     /// let event_ticker = "some_event_ticker";
     /// let event = kalshi_instance.get_single_event(event_ticker, None).await.unwrap();
     /// ```
-    pub async fn get_single_event(
-        &self,
-        event_ticker: &String,
-        with_nested_markets: Option<bool>,
-    ) -> Result<Event, KalshiError> {
-        let single_event_url: &str =
-            &format!("{}/events/{}", self.base_url.to_string(), event_ticker);
-
-        let mut params: Vec<(&str, String)> = Vec::with_capacity(2);
-
-        add_param!(params, "with_nested_markets", with_nested_markets);
-
-        let single_event_url = reqwest::Url::parse_with_params(single_event_url, &params)
-            .unwrap_or_else(|err| {
-                eprintln!("{:?}", err);
-                panic!("Internal Parse Error, please contact developer!");
-            });
-
-        let result: SingleEventResponse = self
-            .client
-            .get(single_event_url)
-            .send()
-            .await?
-            .json()
-            .await?;
-
-        return Ok(result.event);
+    pub async fn get_single_event(&self, event_ticker: &str) -> Result<Event, KalshiError> {
+        let path = format!("/events/{}", event_ticker);
+        let url = self.build_url(&path)?;
+        let result: SingleEventResponse = self.http_get(url).await?;
+        Ok(result.event)
     }
 
     /// Retrieves detailed information about a specific market from the Kalshi exchange.
@@ -63,18 +41,11 @@ impl Kalshi {
     /// let market_ticker = "some_event_ticker";
     /// let market = kalshi_instance.get_single_event(market_ticker).await.unwrap();
     /// ```
-    pub async fn get_single_market(&self, ticker: &String) -> Result<Market, KalshiError> {
-        let single_market_url: &str = &format!("{}/markets/{}", self.base_url.to_string(), ticker);
-
-        let result: SingleMarketResponse = self
-            .client
-            .get(single_market_url)
-            .send()
-            .await?
-            .json()
-            .await?;
-
-        return Ok(result.market);
+    pub async fn get_single_market(&self, ticker: &str) -> Result<Market, KalshiError> {
+        let path = format!("/markets/{}", ticker);
+        let url = self.build_url(&path)?;
+        let result: SingleMarketResponse = self.http_get(url).await?;
+        Ok(result.market)
     }
     /// Asynchronously retrieves information about multiple markets from the Kalshi exchange.
     ///
@@ -121,8 +92,6 @@ impl Kalshi {
         status: Option<String>,
         tickers: Option<String>,
     ) -> Result<(Option<String>, Vec<Market>), KalshiError> {
-        let markets_url: &str = &format!("{}/markets", self.base_url.to_string());
-
         let mut params: Vec<(&str, String)> = Vec::with_capacity(10);
 
         add_param!(params, "limit", limit);
@@ -134,33 +103,8 @@ impl Kalshi {
         add_param!(params, "max_close_ts", max_close_ts);
         add_param!(params, "tickers", tickers);
 
-        let markets_url =
-            reqwest::Url::parse_with_params(markets_url, &params).unwrap_or_else(|err| {
-                eprintln!("{:?}", err);
-                panic!("Internal Parse Error, please contact developer!");
-            });
-
-        let mut path_str = "/markets".to_string();
-        if let Some(query) = markets_url.query() {
-            path_str.push('?');
-            path_str.push_str(query);
-        }
-
-        let mut request = self.client.get(markets_url);
-
-        if self.has_api_key() {
-            let headers = self.get_api_key_headers("GET", &path_str)?;
-            request = request.headers(headers);
-        } else {
-            let token = self.curr_token.as_ref().ok_or(KalshiError::NotAuthenticated)?;
-            request = request.header("Authorization", token);
-        }
-
-        let result: PublicMarketsResponse = request
-            .send()
-            .await?
-            .json()
-            .await?;
+        let url = self.build_url_with_params("/markets", params)?;
+        let result: PublicMarketsResponse = self.http_get(url).await?;
 
         Ok((result.cursor, result.markets))
     }
@@ -203,9 +147,7 @@ impl Kalshi {
         series_ticker: Option<String>,
         with_nested_markets: Option<bool>,
     ) -> Result<(Option<String>, Vec<Event>), KalshiError> {
-        let events_url: &str = &format!("{}/events", self.base_url.to_string());
-
-        let mut params: Vec<(&str, String)> = Vec::with_capacity(6);
+        let mut params: Vec<(&str, String)> = Vec::with_capacity(5);
 
         add_param!(params, "limit", limit);
         add_param!(params, "status", status);
@@ -213,15 +155,10 @@ impl Kalshi {
         add_param!(params, "series_ticker", series_ticker);
         add_param!(params, "with_nested_markets", with_nested_markets);
 
-        let events_url =
-            reqwest::Url::parse_with_params(events_url, &params).unwrap_or_else(|err| {
-                eprintln!("{:?}", err);
-                panic!("Internal Parse Error, please contact developer!");
-            });
+        let url = self.build_url_with_params("/events", params)?;
+        let result: PublicEventsResponse = self.http_get(url).await?;
 
-        let result: PublicEventsResponse = self.client.get(events_url).send().await?.json().await?;
-
-        return Ok((result.cursor, result.events));
+        Ok((result.cursor, result.events))
     }
     /// Asynchronously retrieves detailed information about a specific series from the Kalshi exchange.
     ///
@@ -240,12 +177,11 @@ impl Kalshi {
     /// let series_ticker = "some_series_ticker";
     /// let series = kalshi_instance.get_series(series_ticker).await.unwrap();
     /// ```
-    pub async fn get_series(&self, ticker: &String) -> Result<Series, KalshiError> {
-        let series_url: &str = &format!("{}/series/{}", self.base_url.to_string(), ticker);
-
-        let result: SeriesResponse = self.client.get(series_url).send().await?.json().await?;
-
-        return Ok(result.series);
+    pub async fn get_series(&self, ticker: &str) -> Result<Series, KalshiError> {
+        let path = format!("/series/{}", ticker);
+        let url = self.build_url(&path)?;
+        let result: SeriesResponse = self.http_get(url).await?;
+        Ok(result.series)
     }
     /// Asynchronously retrieves the order book for a specific market in the Kalshi exchange.
     ///
@@ -269,28 +205,17 @@ impl Kalshi {
     /// ```
     pub async fn get_market_orderbook(
         &self,
-        ticker: &String,
+        ticker: &str,
         depth: Option<i32>,
     ) -> Result<Orderbook, KalshiError> {
-        let path = &format!("/markets/{}/orderbook", ticker);
-        let orderbook_url: &str = &format!("{}{}", self.base_url, path);
-
         let mut params: Vec<(&str, String)> = Vec::new();
-
         add_param!(params, "depth", depth);
 
-        let orderbook_url =
-            reqwest::Url::parse_with_params(orderbook_url, &params).unwrap_or_else(|err| {
-                eprintln!("{:?}", err);
-                panic!("Internal Parse Error, please contact developer!");
-            });
+        let path = format!("/markets/{}/orderbook", ticker);
+        let url = self.build_url_with_params(&path, params)?;
+        let result: OrderBookResponse = self.http_get(url).await?;
 
-        let request_builder = self.client.get(orderbook_url);
-        let request_builder = self.add_authentication_to_request(request_builder, "GET", path)?;
-
-        let result: OrderBookResponse = request_builder.send().await?.json().await?;
-
-        return Ok(result.orderbook);
+        Ok(result.orderbook)
     }
 
     /// Asynchronously retrieves the market history for a given market on the Kalshi exchange.
@@ -323,15 +248,12 @@ impl Kalshi {
     /// ```
     pub async fn get_market_history(
         &self,
-        ticker: &String,
+        ticker: &str,
         limit: Option<i32>,
         cursor: Option<String>,
         min_ts: Option<i64>,
         max_ts: Option<i64>,
     ) -> Result<(Option<String>, Vec<Snapshot>), KalshiError> {
-        let path = &format!("/markets/{}/history", ticker);
-        let market_history_url: &str = &format! {"{}{}", self.base_url, path};
-
         let mut params: Vec<(&str, String)> = Vec::with_capacity(5);
 
         add_param!(params, "limit", limit);
@@ -339,16 +261,9 @@ impl Kalshi {
         add_param!(params, "min_ts", min_ts);
         add_param!(params, "max_ts", max_ts);
 
-        let market_history_url = reqwest::Url::parse_with_params(market_history_url, &params)
-            .unwrap_or_else(|err| {
-                eprintln!("{:?}", err);
-                panic!("Internal Parse Error, please contact developer!");
-            });
-
-        let request_builder = self.client.get(market_history_url);
-        let request_builder = self.add_authentication_to_request(request_builder, "GET", path)?;
-
-        let result: MarketHistoryResponse = request_builder.send().await?.json().await?;
+        let path = format!("/markets/{}/history", ticker);
+        let url = self.build_url_with_params(&path, params)?;
+        let result: MarketHistoryResponse = self.http_get(url).await?;
 
         Ok((result.cursor, result.history))
     }
@@ -381,29 +296,23 @@ impl Kalshi {
     /// ```
     pub async fn get_trades(
         &self,
-        cursor: Option<String>,
+        ticker: &str,
         limit: Option<i32>,
-        ticker: Option<String>,
+        cursor: Option<String>,
         min_ts: Option<i64>,
         max_ts: Option<i64>,
     ) -> Result<(Option<String>, Vec<Trade>), KalshiError> {
-        let trades_url: &str = &format!("{}/markets/trades", self.base_url.to_string());
+        let mut params: Vec<(&str, String)> = Vec::with_capacity(5);
 
-        let mut params: Vec<(&str, String)> = Vec::with_capacity(7);
-
+        let ticker_val = ticker.to_string();
+        add_param!(params, "ticker", Some(ticker_val));
         add_param!(params, "limit", limit);
         add_param!(params, "cursor", cursor);
         add_param!(params, "min_ts", min_ts);
         add_param!(params, "max_ts", max_ts);
-        add_param!(params, "ticker", ticker);
 
-        let trades_url =
-            reqwest::Url::parse_with_params(trades_url, &params).unwrap_or_else(|err| {
-                eprintln!("{:?}", err);
-                panic!("Internal Parse Error, please contact developer!");
-            });
-
-        let result: PublicTradesResponse = self.client.get(trades_url).send().await?.json().await?;
+        let url = self.build_url_with_params("/markets/trades", params)?;
+        let result: PublicTradesResponse = self.http_get(url).await?;
 
         Ok((result.cursor, result.trades))
     }

@@ -83,8 +83,16 @@ impl UnipredCore {
         }
     }
 
-    fn get_quote(&self, ticker: String) -> PyResult<String> {
-        let cmd = GetMarketQuote::new(ticker);
+    #[pyo3(signature = (ticker, exchange=None))]
+    fn get_quote(&self, ticker: String, exchange: Option<String>) -> PyResult<String> {
+        let source = match exchange.as_deref() {
+            Some("kalshi") => Some(unipred_core::domain::MarketSource::Kalshi),
+            Some("polymarket") => Some(unipred_core::domain::MarketSource::Polymarket),
+            Some(s) => return Err(pyo3::exceptions::PyValueError::new_err(format!("Unknown exchange: {}", s))),
+            None => None,
+        };
+
+        let cmd = GetMarketQuote::new(ticker, source);
 
         // Block until the future completes
         let result = self.rt.block_on(async {

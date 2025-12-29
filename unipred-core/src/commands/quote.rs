@@ -3,15 +3,17 @@ use crate::UnipredCore;
 use crate::domain::{MarketQuote, MarketSource};
 use async_trait::async_trait;
 use rust_decimal::Decimal;
+use rust_decimal::prelude::FromPrimitive;
 use anyhow::Result;
 
 pub struct GetMarketQuote {
     pub ticker: String,
+    pub exchange: Option<MarketSource>,
 }
 
 impl GetMarketQuote {
-    pub fn new(ticker: String) -> Self {
-        Self { ticker }
+    pub fn new(ticker: String, exchange: Option<MarketSource>) -> Self {
+        Self { ticker, exchange }
     }
 }
 
@@ -19,30 +21,33 @@ impl GetMarketQuote {
 impl Command for GetMarketQuote {
     type Response = MarketQuote;
 
-    async fn execute(&self, _core: &UnipredCore) -> Result<Self::Response> {
-        // Dispatch logic
-        // This is a simplified example. Real logic would check ticker format or lookup a registry.
-        
-        let is_polymarket = self.ticker.starts_with("0x") || self.ticker.chars().all(char::is_numeric);
+    async fn execute(&self, core: &UnipredCore) -> Result<Self::Response> {
+        let source = self.exchange.clone().unwrap_or_else(|| MarketSource::detect(&self.ticker));
 
-        if is_polymarket {
-             // Polymarket logic (mocked for now as we don't have full mapping)
-             // let _market = core.polymarket.get_market(&self.ticker).await?;
-             Ok(MarketQuote {
-                 ticker: self.ticker.clone(),
-                 price: Decimal::new(50, 2), // 0.50
-                 volume: Decimal::new(1000, 0),
-                 source: MarketSource::Polymarket
-             })
-        } else {
-             // Kalshi logic
-             // let _market = core.kalshi.get_single_market(&self.ticker).await?;
-             Ok(MarketQuote {
-                 ticker: self.ticker.clone(),
-                 price: Decimal::new(75, 2), // 0.75
-                 volume: Decimal::new(500, 0),
-                 source: MarketSource::Kalshi
-             })
+        match source {
+            MarketSource::Kalshi => {
+                let market = core.kalshi.get_single_market(&self.ticker).await?;
+                
+                Ok(MarketQuote {
+                    ticker: market.ticker,
+                    price: Decimal::from_i64(market.last_price).unwrap_or_default() / Decimal::new(100, 0),
+                    volume: Decimal::from_i64(market.volume).unwrap_or_default(),
+                    source: MarketSource::Kalshi,
+                })
+            },
+            MarketSource::Polymarket => {
+                let mid_resp = core.polymarket.get_midpoint(&self.ticker).await?;
+                
+                Ok(MarketQuote {
+                    ticker: self.ticker.clone(),
+                    price: mid_resp.mid,
+                    volume: Decimal::new(0, 0),
+                    source: MarketSource::Polymarket,
+                })
+            },
+            MarketSource::Unknown => {
+                anyhow::bail!("Could not determine exchange for ticker: {}", self.ticker);
+            }
         }
     }
 }

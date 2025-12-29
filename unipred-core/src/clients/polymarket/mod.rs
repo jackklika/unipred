@@ -204,14 +204,25 @@ impl ClobClient {
     }
 
     pub async fn get_midpoint(&self, token_id: &str) -> ClientResult<MidpointResponse> {
-        Ok(self
+        let resp = self
             .http_client
             .get(format!("{}/midpoint", &self.host))
             .query(&[("token_id", token_id)])
             .send()
-            .await?
-            .json::<MidpointResponse>()
-            .await?)
+            .await?;
+
+        let text = resp.text().await?;
+        match serde_json::from_str::<MidpointResponse>(&text) {
+            Ok(m) => Ok(m),
+            Err(e) => {
+                let err_msg = format!(
+                    "Failed to decode midpoint response for {}: {}. Body: {}",
+                    token_id, e, text
+                );
+                eprintln!("{}", err_msg);
+                panic!("{}", err_msg);
+            }
+        }
     }
 
     pub async fn get_midpoints(

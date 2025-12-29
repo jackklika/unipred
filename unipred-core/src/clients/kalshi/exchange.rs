@@ -16,17 +16,9 @@ impl Kalshi {
     /// kalshi_instance.get_exchange_status().await.unwrap();
     /// ```
     pub async fn get_exchange_status(&self) -> Result<ExchangeStatus, KalshiError> {
-        let exchange_status_url: &str = &format!("{}/exchange/status", self.base_url.to_string());
-
-        let result: ExchangeStatus = self
-            .client
-            .get(exchange_status_url)
-            .send()
-            .await?
-            .json()
-            .await?;
-
-        return Ok(result);
+        let url = self.build_url("/exchange/status")?;
+        let result: ExchangeStatus = self.http_get(url).await?;
+        Ok(result)
     }
 
     /// Asynchronously retrieves the exchange's trading schedule.
@@ -42,17 +34,9 @@ impl Kalshi {
     /// kalshi_instance.get_exchange_schedule().await.unwrap();
     /// ```
     pub async fn get_exchange_schedule(&self) -> Result<ExchangeScheduleStandard, KalshiError> {
-        let exchange_schedule_url: &str =
-            &format!("{}/exchange/schedule", self.base_url.to_string());
-
-        let result: ExchangeScheduleResponse = self
-            .client
-            .get(exchange_schedule_url)
-            .send()
-            .await?
-            .json()
-            .await?;
-        return Ok(result.schedule);
+        let url = self.build_url("/exchange/schedule")?;
+        let result: ExchangeScheduleResponse = self.http_get(url).await?;
+        Ok(result.schedule)
     }
 }
 

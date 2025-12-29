@@ -27,21 +27,13 @@ impl<'a> Kalshi {
     /// kalshi_instance.login("johndoe@example.com", "example_password").await?;
     /// ```
     pub async fn login(&mut self, user: &str, password: &str) -> Result<(), KalshiError> {
-        let login_url: &str = &format!("{}/login", self.base_url.to_string());
-
         let login_payload = LoginPayload {
             email: user.to_string(),
             password: password.to_string(),
         };
 
-        let result: LoginResponse = self
-            .client
-            .post(login_url)
-            .json(&login_payload)
-            .send()
-            .await?
-            .json()
-            .await?;
+        let url = self.build_url("/login")?;
+        let result: LoginResponse = self.http_post(url, &login_payload).await?;
 
         self.curr_token = Some(format!("Bearer {}", result.token));
         self.member_id = Some(result.member_id.clone());
@@ -50,7 +42,7 @@ impl<'a> Kalshi {
         self.private_key = None;
         self.api_key_id = None;
 
-        return Ok(());
+        Ok(())
     }
 
     /// Asynchronously authenticates a user with the Kalshi exchange using an API key.
@@ -119,16 +111,16 @@ impl<'a> Kalshi {
     /// kalshi_instance.logout().await?;
     /// ```
     pub async fn logout(&self) -> Result<(), KalshiError> {
-        let logout_url: &str = &format!("{}/logout", self.base_url.to_string());
+        let url = self.build_url("/logout")?;
 
         self.client
-            .post(logout_url)
+            .post(url)
             .header("Authorization", self.curr_token.clone().unwrap())
             .header("content-type", "application/json".to_string())
             .send()
             .await?;
 
-        return Ok(());
+        Ok(())
     }
 
     /// Generates the required headers for API key authentication.

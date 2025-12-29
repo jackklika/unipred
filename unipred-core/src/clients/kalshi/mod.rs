@@ -124,6 +124,7 @@ mod market;
 mod portfolio;
 mod crypto;
 mod tick;
+mod http;
 
 
 pub use exchange::*;

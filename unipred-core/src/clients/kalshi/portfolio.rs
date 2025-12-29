@@ -26,14 +26,8 @@ impl<'a> Kalshi {
     /// ```
     ///
     pub async fn get_balance(&self) -> Result<i64, KalshiError> {
-        let path = "/portfolio/balance";
-        let balance_url: &str = &format!("{}{}", self.base_url, path);
-
-        let request_builder = self.client.get(balance_url);
-        let request_builder = self.add_authentication_to_request(request_builder, "GET", path)?;
-
-        let result: BalanceResponse = request_builder.send().await?.json().await?;
-
+        let url = self.build_url("/portfolio/balance")?;
+        let result: BalanceResponse = self.http_get(url).await?;
         Ok(result.balance)
     }
 
@@ -78,9 +72,6 @@ impl<'a> Kalshi {
         limit: Option<i32>,
         cursor: Option<String>,
     ) -> Result<(Option<String>, Vec<Order>), KalshiError> {
-        let path = "/portfolio/orders";
-        let user_orders_url: &str = &format!("{}{}", self.base_url, path);
-
         let mut params: Vec<(&str, String)> = Vec::with_capacity(7);
 
         add_param!(params, "ticker", ticker);
@@ -91,18 +82,10 @@ impl<'a> Kalshi {
         add_param!(params, "event_ticker", event_ticker);
         add_param!(params, "status", status);
 
-        let user_orders_url = reqwest::Url::parse_with_params(user_orders_url, &params)
-            .unwrap_or_else(|err| {
-                eprintln!("{:?}", err);
-                panic!("Internal Parse Error, please contact developer!");
-            });
+        let url = self.build_url_with_params("/portfolio/orders", params)?;
+        let result: MultipleOrderResponse = self.http_get(url).await?;
 
-        let request_builder = self.client.get(user_orders_url);
-        let request_builder = self.add_authentication_to_request(request_builder, "GET", path)?;
-
-        let result: MultipleOrderResponse = request_builder.send().await?.json().await?;
-
-        return Ok((result.cursor, result.orders));
+        Ok((result.cursor, result.orders))
     }
 
     /// Retrieves detailed information about a specific order from the Kalshi exchange.
@@ -127,16 +110,11 @@ impl<'a> Kalshi {
     /// let order = kalshi_instance.get_single_order(&order_id).await.unwrap();
     /// ```
     ///
-    pub async fn get_single_order(&self, order_id: &String) -> Result<Order, KalshiError> {
-        let path = &format!("/portfolio/orders/{}", order_id);
-        let user_order_url: &str = &format!("{}{}", self.base_url, path);
-
-        let request_builder = self.client.get(user_order_url);
-        let request_builder = self.add_authentication_to_request(request_builder, "GET", path)?;
-
-        let result: SingleOrderResponse = request_builder.send().await?.json().await?;
-
-        return Ok(result.order);
+    pub async fn get_single_order(&self, order_id: &str) -> Result<Order, KalshiError> {
+        let path = format!("/portfolio/orders/{}", order_id);
+        let url = self.build_url(&path)?;
+        let result: SingleOrderResponse = self.http_get(url).await?;
+        Ok(result.order)
     }
 
     /// Cancels an existing order on the Kalshi exchange.
@@ -163,16 +141,11 @@ impl<'a> Kalshi {
     /// let (order, reduced_by) = kalshi_instance.cancel_order(order_id).await.unwrap();
     /// ```
     ///
-    pub async fn cancel_order(&self, order_id: &str) -> Result<(Order, i32), KalshiError> {
-        let path = &format!("/portfolio/orders/{}", order_id);
-        let cancel_order_url: &str = &format!("{}{}", self.base_url, path);
-
-        let request_builder = self.client.delete(cancel_order_url);
-        let request_builder = self.add_authentication_to_request(request_builder, "DELETE", path)?;
-
-        let result: DeleteOrderResponse = request_builder.send().await?.json().await?;
-
-        Ok((result.order, result.reduced_by))
+    pub async fn cancel_order(&self, order_id: &str) -> Result<Order, KalshiError> {
+        let path = format!("/portfolio/orders/{}", order_id);
+        let url = self.build_url(&path)?;
+        let result: DeleteOrderResponse = self.http_delete(url).await?;
+        Ok(result.order)
     }
     /// Decreases the size of an existing order on the Kalshi exchange.
     ///
@@ -203,13 +176,10 @@ impl<'a> Kalshi {
     ///
     pub async fn decrease_order(
         &self,
-        order_id: &str,
+        order_id: String,
         reduce_by: Option<i32>,
         reduce_to: Option<i32>,
     ) -> Result<Order, KalshiError> {
-        let path = &format!("/portfolio/orders/{}/decrease", order_id);
-        let decrease_order_url: &str = &format!("{}{}", self.base_url, path);
-
         match (reduce_by, reduce_to) {
             (Some(_), Some(_)) => {
                 return Err(KalshiError::UserInputError(
@@ -231,16 +201,9 @@ impl<'a> Kalshi {
             reduce_to: reduce_to,
         };
 
-        let request_builder = self.client.post(decrease_order_url);
-        let request_builder = self.add_authentication_to_request(request_builder, "POST", path)?;
-
-        let result: SingleOrderResponse = request_builder
-            .header("content-type", "application/json".to_string())
-            .json(&decrease_payload)
-            .send()
-            .await?
-            .json()
-            .await?;
+        let path = format!("/portfolio/orders/{}/decrease", order_id);
+        let url = self.build_url(&path)?;
+        let result: SingleOrderResponse = self.http_post(url, &decrease_payload).await?;
 
         Ok(result.order)
     }
@@ -284,30 +247,19 @@ impl<'a> Kalshi {
         limit: Option<i32>,
         cursor: Option<String>,
     ) -> Result<(Option<String>, Vec<Fill>), KalshiError> {
-        let path = "/portfolio/fills";
-        let user_fills_url: &str = &format!("{}{}", self.base_url, path);
-
-        let mut params: Vec<(&str, String)> = Vec::with_capacity(7);
+        let mut params: Vec<(&str, String)> = Vec::with_capacity(6);
 
         add_param!(params, "ticker", ticker);
-        add_param!(params, "limit", limit);
-        add_param!(params, "cursor", cursor);
+        add_param!(params, "order_id", order_id);
         add_param!(params, "min_ts", min_ts);
         add_param!(params, "max_ts", max_ts);
-        add_param!(params, "order_id", order_id);
+        add_param!(params, "limit", limit);
+        add_param!(params, "cursor", cursor);
 
-        let user_fills_url = reqwest::Url::parse_with_params(user_fills_url, &params)
-            .unwrap_or_else(|err| {
-                eprintln!("{:?}", err);
-                panic!("Internal Parse Error, please contact developer!");
-            });
+        let url = self.build_url_with_params("/portfolio/fills", params)?;
+        let result: MultipleFillsResponse = self.http_get(url).await?;
 
-        let request_builder = self.client.get(user_fills_url);
-        let request_builder = self.add_authentication_to_request(request_builder, "GET", path)?;
-
-        let result: MultipleFillsResponse = request_builder.send().await?.json().await?;
-
-        return Ok((result.cursor, result.fills));
+        Ok((result.cursor, result.fills))
     }
 
     /// Retrieves a list of portfolio settlements from the Kalshi exchange.
@@ -336,27 +288,22 @@ impl<'a> Kalshi {
     ///
     pub async fn get_portfolio_settlements(
         &self,
-        limit: Option<i64>,
+        limit: Option<i32>,
         cursor: Option<String>,
+        ticker: Option<String>,
+        min_ts: Option<i64>,
+        max_ts: Option<i64>,
     ) -> Result<(Option<String>, Vec<Settlement>), KalshiError> {
-        let path = "/portfolio/settlements";
-        let settlements_url: &str = &format!("{}{}", self.base_url, path);
-
-        let mut params: Vec<(&str, String)> = Vec::with_capacity(6);
+        let mut params: Vec<(&str, String)> = Vec::with_capacity(5);
 
         add_param!(params, "limit", limit);
         add_param!(params, "cursor", cursor);
+        add_param!(params, "ticker", ticker);
+        add_param!(params, "min_ts", min_ts);
+        add_param!(params, "max_ts", max_ts);
 
-        let settlements_url = reqwest::Url::parse_with_params(settlements_url, &params)
-            .unwrap_or_else(|err| {
-                eprintln!("{:?}", err);
-                panic!("Internal Parse Error, please contact developer!");
-            });
-
-        let request_builder = self.client.get(settlements_url);
-        let request_builder = self.add_authentication_to_request(request_builder, "GET", path)?;
-
-        let result: PortfolioSettlementResponse = request_builder.send().await?.json().await?;
+        let url = self.build_url_with_params("/portfolio/settlements", params)?;
+        let result: PortfolioSettlementResponse = self.http_get(url).await?;
 
         Ok((result.cursor, result.settlements))
     }
@@ -397,10 +344,7 @@ impl<'a> Kalshi {
         ticker: Option<String>,
         event_ticker: Option<String>,
     ) -> Result<(Option<String>, Vec<EventPosition>, Vec<MarketPosition>), KalshiError> {
-        let path = "/portfolio/positions";
-        let positions_url: &str = &format!("{}{}", self.base_url, path);
-
-        let mut params: Vec<(&str, String)> = Vec::with_capacity(6);
+        let mut params: Vec<(&str, String)> = Vec::with_capacity(5);
 
         add_param!(params, "limit", limit);
         add_param!(params, "cursor", cursor);
@@ -408,16 +352,8 @@ impl<'a> Kalshi {
         add_param!(params, "ticker", ticker);
         add_param!(params, "event_ticker", event_ticker);
 
-        let positions_url =
-            reqwest::Url::parse_with_params(positions_url, &params).unwrap_or_else(|err| {
-                eprintln!("{:?}", err);
-                panic!("Internal Parse Error, please contact developer!");
-            });
-
-        let request_builder = self.client.get(positions_url);
-        let request_builder = self.add_authentication_to_request(request_builder, "GET", path)?;
-
-        let result: GetPositionsResponse = request_builder.send().await?.json().await?;
+        let url = self.build_url_with_params("/portfolio/positions", params)?;
+        let result: GetPositionsResponse = self.http_get(url).await?;
 
         Ok((
             result.cursor,
@@ -490,9 +426,6 @@ impl<'a> Kalshi {
         sell_position_floor: Option<i32>,
         yes_price: Option<i64>,
     ) -> Result<Order, KalshiError> {
-        let path = "/portfolio/orders";
-        let order_url: &str = &format!("{}{}", self.base_url, path);
-
         match input_type {
             OrderType::Limit => match (no_price, yes_price) {
                 (Some(_), Some(_)) => {
@@ -531,16 +464,8 @@ impl<'a> Kalshi {
             yes_price: yes_price,
         };
 
-        let request_builder = self.client.post(order_url);
-        let request_builder = self.add_authentication_to_request(request_builder, "POST", path)?;
-
-        let result: SingleOrderResponse = request_builder
-            .header("content-type", "application/json".to_string())
-            .json(&order_payload)
-            .send()
-            .await?
-            .json()
-            .await?;
+        let url = self.build_url("/portfolio/orders")?;
+        let result: SingleOrderResponse = self.http_post(url, &order_payload).await?;
 
         Ok(result.order)
     }
@@ -548,7 +473,7 @@ impl<'a> Kalshi {
     pub async fn batch_cancel_order(
         &mut self,
         batch: Vec<String>,
-    ) -> Result<Vec<Result<(Order, i32), KalshiError>>, KalshiError> {
+    ) -> Result<Vec<Result<Order, KalshiError>>, KalshiError> {
         let temp_instance = Arc::new(self.clone());
         let mut futures = Vec::new();
 
@@ -580,7 +505,7 @@ impl<'a> Kalshi {
     pub async fn batch_create_order(
         &mut self,
         _batch: Vec<OrderCreationField>,
-    ) -> Result<Vec<Result<(Order, i32), KalshiError>>, KalshiError> {
+    ) -> Result<Vec<Result<Order, KalshiError>>, KalshiError> {
         todo!()
     }
 }
