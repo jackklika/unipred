@@ -25,6 +25,7 @@ MANIFEST
 # dbs
 *.db
 lancedb_data
+*.wal
 
 # caches
 .fastembed_cache
