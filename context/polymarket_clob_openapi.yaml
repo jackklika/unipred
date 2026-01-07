@@ -1,17 +1,17 @@
 openapi: 3.0.3
 info:
   title: CLOB (Central Limit Order Book) API
-  description: >-
-    API for interacting with the Central Limit Order Book system, providing
-    orderbook data, prices, midpoints, and spreads
+  description: API for interacting with the Central Limit Order Book system, providing orderbook data, prices, midpoints, and spreads
   version: 1.0.0
   contact:
     name: CLOB API Team
   license:
     name: MIT
+
 servers:
   - url: https://clob.polymarket.com/
     description: Production server
+
 paths:
   /book:
     get:
@@ -26,7 +26,7 @@ paths:
           schema:
             type: string
           description: The unique identifier for the token
-          example: '1234567890'
+          example: "1234567890"
       responses:
         '200':
           description: Successful response
@@ -41,7 +41,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: Invalid token id
+                error: "Invalid token id"
         '404':
           description: Order book not found
           content:
@@ -49,7 +49,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: No orderbook exists for the requested token id
+                error: "No orderbook exists for the requested token id"
         '500':
           description: Internal server error
           content:
@@ -57,7 +57,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: error getting the orderbook
+                error: "error getting the orderbook"
+
   /books:
     post:
       summary: Get multiple order books summaries by request
@@ -74,8 +75,8 @@ paths:
                 $ref: '#/components/schemas/BookRequest'
               maxItems: 500
             example:
-              - token_id: '1234567890'
-              - token_id: '0987654321'
+              - token_id: "1234567890"
+              - token_id: "0987654321"
       responses:
         '200':
           description: Successful response
@@ -94,16 +95,17 @@ paths:
               examples:
                 invalid_payload:
                   value:
-                    error: Invalid payload
+                    error: "Invalid payload"
                 exceeds_limit:
                   value:
-                    error: Payload exceeds the limit
+                    error: "Payload exceeds the limit"
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
   /price:
     get:
       summary: Get market price
@@ -117,17 +119,15 @@ paths:
           schema:
             type: string
           description: The unique identifier for the token
-          example: '1234567890'
+          example: "1234567890"
         - name: side
           in: query
           required: true
           schema:
             type: string
-            enum:
-              - BUY
-              - SELL
+            enum: [BUY, SELL]
           description: The side of the market (BUY or SELL)
-          example: BUY
+          example: "BUY"
       responses:
         '200':
           description: Successful response
@@ -144,10 +144,10 @@ paths:
               examples:
                 invalid_token:
                   value:
-                    error: Invalid token id
+                    error: "Invalid token id"
                 invalid_side:
                   value:
-                    error: Invalid side
+                    error: "Invalid side"
         '404':
           description: Order book not found
           content:
@@ -155,13 +155,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: No orderbook exists for the requested token id
+                error: "No orderbook exists for the requested token id"
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
   /prices:
     get:
       summary: Get multiple market prices
@@ -202,10 +203,10 @@ paths:
                 $ref: '#/components/schemas/PriceRequest'
               maxItems: 500
             example:
-              - token_id: '1234567890'
-                side: BUY
-              - token_id: '0987654321'
-                side: SELL
+              - token_id: "1234567890"
+                side: "BUY"
+              - token_id: "0987654321"
+                side: "SELL"
       responses:
         '200':
           description: Successful response
@@ -222,13 +223,13 @@ paths:
               examples:
                 invalid_payload:
                   value:
-                    error: Invalid payload
+                    error: "Invalid payload"
                 exceeds_limit:
                   value:
-                    error: Payload exceeds the limit
+                    error: "Payload exceeds the limit"
                 invalid_side:
                   value:
-                    error: Invalid side
+                    error: "Invalid side"
         '404':
           description: Order book not found
           content:
@@ -236,13 +237,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: No orderbook exists for the requested token id
+                error: "No orderbook exists for the requested token id"
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
   /midpoint:
     get:
       summary: Get midpoint price
@@ -256,7 +258,7 @@ paths:
           schema:
             type: string
           description: The unique identifier for the token
-          example: '1234567890'
+          example: "1234567890"
       responses:
         '200':
           description: Successful response
@@ -271,7 +273,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: Invalid token id
+                error: "Invalid token id"
         '404':
           description: Order book not found
           content:
@@ -279,13 +281,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: No orderbook exists for the requested token id
+                error: "No orderbook exists for the requested token id"
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
   /spreads:
     post:
       summary: Get bid-ask spreads
@@ -302,8 +305,8 @@ paths:
                 $ref: '#/components/schemas/BookRequest'
               maxItems: 500
             example:
-              - token_id: '1234567890'
-              - token_id: '0987654321'
+              - token_id: "1234567890"
+              - token_id: "0987654321"
       responses:
         '200':
           description: Successful response
@@ -320,10 +323,10 @@ paths:
               examples:
                 invalid_payload:
                   value:
-                    error: Invalid payload
+                    error: "Invalid payload"
                 exceeds_limit:
                   value:
-                    error: Payload exceeds the limit
+                    error: "Payload exceeds the limit"
         '500':
           description: Internal server error
           content:
@@ -331,7 +334,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
               example:
-                error: error getting the spread
+                error: "error getting the spread"
+
   /prices-history:
     get:
       summary: Get price history for a traded token
@@ -345,7 +349,7 @@ paths:
           schema:
             type: string
           description: The CLOB token ID for which to fetch price history
-          example: '1234567890'
+          example: "1234567890"
         - name: startTs
           in: query
           required: false
@@ -365,17 +369,9 @@ paths:
           required: false
           schema:
             type: string
-            enum:
-              - 1m
-              - 1w
-              - 1d
-              - 6h
-              - 1h
-              - max
-          description: >-
-            A string representing a duration ending at the current time.
-            Mutually exclusive with startTs and endTs
-          example: 1d
+            enum: [1m, 1w, 1d, 6h, 1h, max]
+          description: A string representing a duration ending at the current time. Mutually exclusive with startTs and endTs
+          example: "1d"
         - name: fidelity
           in: query
           required: false
@@ -408,6 +404,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+
 components:
   schemas:
     OrderBookSummary:
@@ -426,20 +423,20 @@ components:
         market:
           type: string
           description: Market identifier
-          example: '0x1b6f76e5b8587ee896c35847e12d11e75290a8c3934c5952e8a9d6e4c6f03cfa'
+          example: "0x1b6f76e5b8587ee896c35847e12d11e75290a8c3934c5952e8a9d6e4c6f03cfa"
         asset_id:
           type: string
           description: Asset identifier
-          example: '1234567890'
+          example: "1234567890"
         timestamp:
           type: string
           format: date-time
           description: Timestamp of the order book snapshot
-          example: '2023-10-01T12:00:00Z'
+          example: "2023-10-01T12:00:00Z"
         hash:
           type: string
           description: Hash of the order book state
-          example: 0xabc123def456...
+          example: "0xabc123def456..."
         bids:
           type: array
           items:
@@ -453,15 +450,16 @@ components:
         min_order_size:
           type: string
           description: Minimum order size for this market
-          example: '0.001'
+          example: "0.001"
         tick_size:
           type: string
           description: Minimum price increment
-          example: '0.01'
+          example: "0.01"
         neg_risk:
           type: boolean
           description: Whether negative risk is enabled
           example: false
+
     OrderLevel:
       type: object
       required:
@@ -471,11 +469,12 @@ components:
         price:
           type: string
           description: Price level (as string to maintain precision)
-          example: '1800.50'
+          example: "1800.50"
         size:
           type: string
           description: Total size at this price level
-          example: '10.5'
+          example: "10.5"
+
     BookRequest:
       type: object
       required:
@@ -484,14 +483,13 @@ components:
         token_id:
           type: string
           description: The unique identifier for the token
-          example: '1234567890'
+          example: "1234567890"
         side:
           type: string
-          enum:
-            - BUY
-            - SELL
+          enum: [BUY, SELL]
           description: Optional side parameter for certain operations
-          example: BUY
+          example: "BUY"
+
     PriceRequest:
       type: object
       required:
@@ -501,14 +499,13 @@ components:
         token_id:
           type: string
           description: The unique identifier for the token
-          example: '1234567890'
+          example: "1234567890"
         side:
           type: string
-          enum:
-            - BUY
-            - SELL
+          enum: [BUY, SELL]
           description: The side of the market (BUY or SELL)
-          example: BUY
+          example: "BUY"
+
     PriceResponse:
       type: object
       required:
@@ -517,7 +514,8 @@ components:
         price:
           type: string
           description: The market price (as string to maintain precision)
-          example: '1800.50'
+          example: "1800.50"
+
     PricesResponse:
       type: object
       additionalProperties:
@@ -526,12 +524,13 @@ components:
           type: string
       description: Map of token_id to side to price
       example:
-        '1234567890':
-          BUY: '1800.50'
-          SELL: '1801.00'
-        '0987654321':
-          BUY: '50.25'
-          SELL: '50.30'
+        "1234567890":
+          "BUY": "1800.50"
+          "SELL": "1801.00"
+        "0987654321":
+          "BUY": "50.25"
+          "SELL": "50.30"
+
     MidpointResponse:
       type: object
       required:
@@ -540,15 +539,17 @@ components:
         mid:
           type: string
           description: The midpoint price (as string to maintain precision)
-          example: '1800.75'
+          example: "1800.75"
+
     SpreadsResponse:
       type: object
       additionalProperties:
         type: string
       description: Map of token_id to spread value
       example:
-        '1234567890': '0.50'
-        '0987654321': '0.05'
+        "1234567890": "0.50"
+        "0987654321": "0.05"
+
     PriceHistoryResponse:
       type: object
       required:
@@ -570,6 +571,7 @@ components:
                 type: number
                 description: Price
                 example: 1800.75
+
     Error:
       type: object
       required:
@@ -578,7 +580,8 @@ components:
         error:
           type: string
           description: Error message describing what went wrong
-          example: Invalid token id
+          example: "Invalid token id"
+
   parameters:
     TokenIdParam:
       name: token_id
@@ -587,18 +590,18 @@ components:
       schema:
         type: string
       description: The unique identifier for the token
-      example: '1234567890'
+      example: "1234567890"
+
     SideParam:
       name: side
       in: query
       required: true
       schema:
         type: string
-        enum:
-          - BUY
-          - SELL
+        enum: [BUY, SELL]
       description: The side of the market (BUY or SELL)
-      example: BUY
+      example: "BUY"
+
   responses:
     BadRequest:
       description: Bad request
@@ -606,18 +609,21 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+
     NotFound:
       description: Resource not found
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+
     InternalServerError:
       description: Internal server error
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
+
 tags:
   - name: Orderbook
     description: Order book related operations
