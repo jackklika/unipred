@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12market_quote.proto\x12\x07unipred\"y\n\x0bMarketQuote\x12\x0e\n\x06ticker\x18\x01 \x01(\t\x12\x0e\n\x06source\x18\x02 \x01(\t\x12\r\n\x05price\x18\x03 \x01(\t\x12\x0b\n\x03\x62id\x18\x04 \x01(\t\x12\x0b\n\x03\x61sk\x18\x05 \x01(\t\x12\x0e\n\x06volume\x18\x06 \x01(\t\x12\x11\n\ttimestamp\x18\x07 \x01(\t\"N\n\rFetchedMarket\x12\x0e\n\x06ticker\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0e\n\x06source\x18\x03 \x01(\t\x12\x0e\n\x06status\x18\x04 \x01(\t\"L\n\x11\x46\x65tchedMarketList\x12\x0e\n\x06\x63ursor\x18\x01 \x01(\t\x12\'\n\x07markets\x18\x02 \x03(\x0b\x32\x16.unipred.FetchedMarketb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12market_quote.proto\x12\x07unipred\"y\n\x0bMarketQuote\x12\x0e\n\x06ticker\x18\x01 \x01(\t\x12\x0e\n\x06source\x18\x02 \x01(\t\x12\r\n\x05price\x18\x03 \x01(\t\x12\x0b\n\x03\x62id\x18\x04 \x01(\t\x12\x0b\n\x03\x61sk\x18\x05 \x01(\t\x12\x0e\n\x06volume\x18\x06 \x01(\t\x12\x11\n\ttimestamp\x18\x07 \x01(\t\"\xcb\x01\n\rFetchedMarket\x12\x0e\n\x06ticker\x18\x01 \x01(\t\x12\r\n\x05title\x18\x02 \x01(\t\x12\x0e\n\x06source\x18\x03 \x01(\t\x12\x0e\n\x06status\x18\x04 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x05 \x01(\t\x12\x10\n\x08outcomes\x18\x06 \x03(\t\x12\x12\n\nstart_date\x18\x07 \x01(\t\x12\x10\n\x08\x65nd_date\x18\x08 \x01(\t\x12\x0e\n\x06volume\x18\t \x01(\t\x12\x11\n\tliquidity\x18\n \x01(\t\x12\x0b\n\x03url\x18\x0b \x01(\t\"L\n\x11\x46\x65tchedMarketList\x12\x0e\n\x06\x63ursor\x18\x01 \x01(\t\x12\'\n\x07markets\x18\x02 \x03(\x0b\x32\x16.unipred.FetchedMarketb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,8 +33,8 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_MARKETQUOTE']._serialized_start=31
   _globals['_MARKETQUOTE']._serialized_end=152
-  _globals['_FETCHEDMARKET']._serialized_start=154
-  _globals['_FETCHEDMARKET']._serialized_end=232
-  _globals['_FETCHEDMARKETLIST']._serialized_start=234
-  _globals['_FETCHEDMARKETLIST']._serialized_end=310
+  _globals['_FETCHEDMARKET']._serialized_start=155
+  _globals['_FETCHEDMARKET']._serialized_end=358
+  _globals['_FETCHEDMARKETLIST']._serialized_start=360
+  _globals['_FETCHEDMARKETLIST']._serialized_end=436
 # @@protoc_insertion_point(module_scope)

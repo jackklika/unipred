@@ -51,3 +51,21 @@ class UnipredCore:
         quote = MarketQuote()
         quote.ParseFromString(bytes_data)
         return quote
+
+    def ingest_all(
+        self,
+        db_path: str,
+        lancedb_path: str,
+        exchanges: list[str] | None = None,
+        statuses: list[str] | None = None,
+    ) -> None:
+        """
+        Ingests markets from configured exchanges into DuckDB and LanceDB.
+
+        Args:
+            db_path: Path to the DuckDB database file.
+            lancedb_path: Path to the LanceDB directory.
+            exchanges: List of exchanges to scrape (e.g. ["kalshi", "polymarket"]).
+            statuses: List of statuses to filter (e.g. ["active", "closed"]).
+        """
+        self._inner.ingest_all(db_path, lancedb_path, exchanges, statuses)

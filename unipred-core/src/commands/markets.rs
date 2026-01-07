@@ -71,10 +71,17 @@ impl Command for FetchMarkets {
                 let unified_markets = markets
                     .into_iter()
                     .map(|m| FetchedMarket {
-                        ticker: m.ticker,
+                        ticker: m.ticker.clone(),
                         title: m.title,
                         source: "Kalshi".to_string(),
                         status: m.status,
+                        description: m.subtitle,
+                        outcomes: vec![m.yes_sub_title, m.no_sub_title],
+                        start_date: m.open_time.clone(),
+                        end_date: m.close_time.clone(),
+                        volume: m.volume.to_string(),
+                        liquidity: m.liquidity.to_string(),
+                        url: format!("https://kalshi.com/markets/{}", m.ticker),
                     })
                     .collect();
 
@@ -102,6 +109,13 @@ impl Command for FetchMarkets {
                         } else {
                             "closed".to_string()
                         },
+                        description: m.description,
+                        outcomes: m.tokens.iter().map(|t| t.outcome.clone()).collect(),
+                        start_date: m.game_start_time.unwrap_or_default(),
+                        end_date: m.end_date_iso.unwrap_or_default(),
+                        volume: "0".to_string(),
+                        liquidity: "0".to_string(),
+                        url: format!("https://polymarket.com/event/{}", m.market_slug),
                     })
                     .collect();
 

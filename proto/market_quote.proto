@@ -17,6 +17,13 @@ message FetchedMarket {
   string title = 2;
   string source = 3; // "Kalshi" or "Polymarket"
   string status = 4; // "active" or "closed"
+  string description = 5;
+  repeated string outcomes = 6;
+  string start_date = 7;
+  string end_date = 8;
+  string volume = 9;
+  string liquidity = 10;
+  string url = 11;
 }
 
 message FetchedMarketList {

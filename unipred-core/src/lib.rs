@@ -1,6 +1,9 @@
 pub mod clients;
 pub mod commands;
 pub mod domain;
+pub mod storage;
+pub mod ml;
+pub mod ingestion;
 
 pub mod proto {
     include!(concat!(env!("OUT_DIR"), "/unipred.rs"));

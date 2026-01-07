@@ -1,7 +1,8 @@
 from .core import UnipredCore
 from .market_quote_pb2 import MarketQuote, FetchedMarketList
+from .storage import LanceStore, MarketEmbedding
 
-__all__ = ["UnipredCore", "MarketQuote", "FetchedMarketList"]
+__all__ = ["UnipredCore", "MarketQuote", "FetchedMarketList", "LanceStore", "MarketEmbedding"]
 
 def hello() -> str:
     # Deprecated helper function kept for backwards compatibility

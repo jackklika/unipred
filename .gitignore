@@ -24,6 +24,10 @@ MANIFEST
 
 # dbs
 *.db
+lancedb_data
+
+# caches
+.fastembed_cache
 
 # Virtual Environments
 .env
