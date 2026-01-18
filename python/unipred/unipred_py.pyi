@@ -16,6 +16,7 @@ class UnipredCore:
         lancedb_path: str,
         exchanges: list[str] | None = None,
         statuses: list[str] | None = None,
+        test_mode: bool = False,
     ) -> None: ...
 
 class PyLanceDb:

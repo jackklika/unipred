@@ -2,33 +2,37 @@
 
 Unified python library for prediction market exchange operations.
 
-Intended to used for low-latency applications and local-first research.
+Intended for research and prediction market interaction with a simple, python interface across exchanges.
 
 This project demonstrates a hybrid Rust/Python architecture similar to Pydantic V2.
+
+## Status
+
+Currently, this is mostly code smashed together from some kalshi and polymarket clients, some domain models from other projects, and a lot of sloppy-but-functional AI contributions. But the structure was thought out and modular, making it easy to clean up and ship for a beta 0.0.1. I want to focus on creating a solid foundation.
 
 ## High-level Goals
 
 - **Local-first**: Give library users full control of state and data, so we can run analytical operations on local data and also respect all terms and conditions of api usage.
-- **Fast**: Run operations quickly, putting as little latency as possible between the exchange and user intent.
+- **Fast & Efficient**: Run operations quickly, maximizing machine resource usage to scrape and process events. 
 - **Multi-language**: Requests for market data and responses are stored in protobuf format, allowing working with the same operations from rust, python, and data formats.
+- **Simple Interface**: Wrap all system commands in a lightweight python wrapper, so users can interact with the data like a data scientist in jupyter without needing to know what a tokio runtime is.
 
 ## Feature Roadmap
 
-Currently, this is mostly code smashed together from some kalshi and polymarket clients, some domain models from other projects, and a lot of AI slop. But the structure was thought out and modular, making it easy to clean up and ship for a beta 0.0.1. I want to focus on creating a solid foundation.
-
-Here are specific features I would like to accomplish on top of this foundation:
+Here are specific features I would like to build on top of this foundation:
 
 - **Market Correlation**: Given any market identifier, find the most correlated markets and include a 'correlation score' 
-- **AI Prediction Market Tooling**: Expose plaintext instructions for how LLMs can interact with this market data, by calling python bindings, rust functions, or even just querying the datastores. Pydantic AI tools will be set up in the python module to allow human-in-the-loop interactions with markets.
+- **AI Prediction Market Tooling**: Expose plaintext instructions for how LLMs can interact with this market data, by calling python bindings, rust functions, or even just querying the datastores. Pydantic AI tools will be set up in the python module to allow safe yet automated human-in-the-loop interactions with markets, such as order flow.
 - **User Interface**: A dashboard/terminal for interaction with these markets using these backend features. A sandboxed python environment could allow for scripting in the browser to set up custom workflows, perhaps using temporal.
+- **Cloud hosting**: Copying exchange state to local development environments is not efficient. The exchange state and derived data like similarity embeddings would be the same, and ideally would be stored on cloud infrastructure, so we can take advantage of economies of scale. But we need to respect kalshi and polymarket data terms of service.
 
 ## High Level Structure
 
 - Communication with exchanges happens in the rust core `clients` module
-- UnipredCore is defined in rust, which is the broker of all commands and responses in the application.
-- Exchange-specific operations or data is mapped to shared domain objects in rust
-- Rust project at `/unipred-py` exposes internal python bindings. Python is intended to be a thin configuration or orchestration layer, while all 'hot paths' are implemented in rust.
+- `UnipredCore` is defined in rust, which is the broker of all commands and responses in the application.
+- `unipred-core/src/commands` is where exchange-specific operations or data is mapped to shared domain objects in rust.
 - `python/unipred/commands` exposes public functions which wrap the rust core, and perform the protobuf serialization/deserialization in the python runtime
+- Rust project at `/unipred-py` exposes internal python bindings. Python is intended to be a thin configuration or orchestration layer, while all 'hot paths' are implemented in rust.
 
 ## Project Structure
 

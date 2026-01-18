@@ -26,6 +26,21 @@ message FetchedMarket {
   string url = 11;
 }
 
+message FetchedEvent {
+  string ticker = 1;
+  string title = 2;
+  string source = 3;
+  string description = 4;
+  string start_date = 5;
+  string end_date = 6;
+  string url = 7;
+}
+
+message FetchedEventList {
+  string cursor = 1;
+  repeated FetchedEvent events = 2;
+}
+
 message FetchedMarketList {
   string cursor = 1;
   repeated FetchedMarket markets = 2;

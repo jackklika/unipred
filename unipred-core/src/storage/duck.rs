@@ -1,6 +1,6 @@
 use anyhow::Result;
 use duckdb::{params, Connection};
-use crate::proto::FetchedMarket;
+use crate::proto::{FetchedMarket, FetchedEvent};
 
 pub struct DuckStore {
     conn: Connection,
@@ -29,6 +29,21 @@ impl DuckStore {
                 end_date VARCHAR,
                 volume VARCHAR,
                 liquidity VARCHAR,
+                url VARCHAR,
+                ingested_at TIMESTAMP DEFAULT current_timestamp,
+                PRIMARY KEY (ticker, source)
+            )",
+            [],
+        )?;
+
+        self.conn.execute(
+            "CREATE TABLE IF NOT EXISTS events (
+                ticker VARCHAR,
+                source VARCHAR,
+                title VARCHAR,
+                description VARCHAR,
+                start_date VARCHAR,
+                end_date VARCHAR,
                 url VARCHAR,
                 ingested_at TIMESTAMP DEFAULT current_timestamp,
                 PRIMARY KEY (ticker, source)
@@ -65,6 +80,33 @@ impl DuckStore {
                     m.volume,
                     m.liquidity,
                     m.url
+                ])?;
+            }
+        }
+        tx.commit()?;
+        Ok(())
+    }
+
+    /// Batch insert or replace events.
+    pub fn insert_events_batch(&mut self, events: &[FetchedEvent]) -> Result<()> {
+        let tx = self.conn.transaction()?;
+        {
+            let mut stmt = tx.prepare(
+                "INSERT OR REPLACE INTO events (
+                    ticker, source, title, description,
+                    start_date, end_date, url
+                ) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            )?;
+
+            for e in events {
+                stmt.execute(params![
+                    e.ticker,
+                    e.source,
+                    e.title,
+                    e.description,
+                    e.start_date,
+                    e.end_date,
+                    e.url
                 ])?;
             }
         }

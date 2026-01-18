@@ -8401,6 +8401,7 @@ dependencies = [
 name = "unipred-py"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "prost 0.14.1",
  "pyo3",
  "serde",

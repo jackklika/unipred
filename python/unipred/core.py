@@ -58,6 +58,7 @@ class UnipredCore:
         lancedb_path: str,
         exchanges: list[str] | None = None,
         statuses: list[str] | None = None,
+        test_mode: bool = False,
     ) -> None:
         """
         Ingests markets from configured exchanges into DuckDB and LanceDB.
@@ -67,5 +68,6 @@ class UnipredCore:
             lancedb_path: Path to the LanceDB directory.
             exchanges: List of exchanges to scrape (e.g. ["kalshi", "polymarket"]).
             statuses: List of statuses to filter (e.g. ["active", "closed"]).
+            test_mode: If True, limits ingestion to a few pages for testing.
         """
-        self._inner.ingest_all(db_path, lancedb_path, exchanges, statuses)
+        self._inner.ingest_all(db_path, lancedb_path, exchanges, statuses, test_mode)

@@ -11,6 +11,8 @@ def main():
     parser = argparse.ArgumentParser(description="Ingest all markets into DuckDB and LanceDB.")
     parser.add_argument("--db-path", default="markets.db", help="Path to DuckDB file")
     parser.add_argument("--lancedb-path", default="lancedb_data", help="Path to LanceDB directory")
+    parser.add_argument("--exchange", action="append", help="Exchange to scrape (can be specified multiple times). Default: all.")
+    parser.add_argument("--test", action="store_true", help="Run in test mode (limit pages)")
     args = parser.parse_args()
 
     # 1. Initialize Core
@@ -31,7 +33,7 @@ def main():
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
             f.write(private_key)
             temp_key_path = f.name
-        
+
         try:
             core.login_apikey(key_id, temp_key_path)
             print("Login successful.")
@@ -49,13 +51,16 @@ def main():
     print(f"DuckDB: {args.db_path}")
     print(f"LanceDB: {args.lancedb_path}")
 
+    exchanges = args.exchange if args.exchange else ["kalshi", "polymarket"]
+
     try:
         # Fetch everything: Kalshi (active/closed) and Polymarket
         core.ingest_all(
             db_path=args.db_path,
             lancedb_path=args.lancedb_path,
-            exchanges=["kalshi", "polymarket"],
-            statuses=["active", "closed"]
+            exchanges=exchanges,
+            statuses=["active", "closed"],
+            test_mode=args.test
         )
         print("Ingestion complete.")
     except Exception as e:

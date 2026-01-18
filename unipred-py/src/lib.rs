@@ -114,15 +114,19 @@ Python::with_gil(|py| Ok(PyBytes::new(py, &buf).into()))
         }
     }
 
-    #[pyo3(signature = (db_path, lancedb_path, exchanges=None, statuses=None))]
+    #[pyo3(signature = (db_path, lancedb_path, exchanges=None, statuses=None, test_mode=false))]
     fn ingest_all(
         &self,
         db_path: String,
         lancedb_path: String,
         exchanges: Option<Vec<String>>,
         statuses: Option<Vec<String>>,
+        test_mode: bool,
     ) -> PyResult<()> {
         let mut filters = IngestionFilter::default();
+        if test_mode {
+            filters.max_pages = Some(2); // Limit to 2 pages in test mode
+        }
 
         if let Some(exs) = exchanges {
             filters.exchanges = exs
@@ -139,9 +143,26 @@ Python::with_gil(|py| Ok(PyBytes::new(py, &buf).into()))
             filters.statuses = st;
         }
 
-        let result = self.rt.block_on(async {
-            let engine = IngestionEngine::new(&db_path, &lancedb_path).await?;
-            engine.run(&self.inner, filters).await
+        // 1. Initialize engine (async)
+        let engine = self.rt.block_on(async {
+            IngestionEngine::new(&db_path, &lancedb_path).await
+        }).map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))?;
+
+        // 2. Run engine (async, long-running, with GIL release)
+        let result = Python::with_gil(|py| {
+            // Allow cancellation by checking Python signals periodically
+            let check_signals = || {
+                Python::with_gil(|py| {
+                    py.check_signals().map_err(|e| anyhow::anyhow!(e))
+                })
+            };
+
+            // Release GIL during long-running operation, but check signals
+            py.allow_threads(|| {
+                self.rt.block_on(async {
+                    engine.run(&self.inner, filters, Some(check_signals)).await
+                })
+            })
         });
 
         match result {

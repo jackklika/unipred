@@ -1,4 +1,5 @@
 pub mod quote;
+pub mod events;
 pub mod markets;
 
 use async_trait::async_trait;

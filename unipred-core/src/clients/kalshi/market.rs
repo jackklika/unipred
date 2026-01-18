@@ -458,6 +458,8 @@ pub struct Market {
     pub settlement_value: Option<String>,
     /// Functional strike information, if applicable.
     pub functional_strike: Option<String>,
+    /// Ticker of the multivariate event collection if this market belongs to one.
+    pub mve_collection_ticker: Option<String>,
 }
 
 /// An event in the Kalshi exchange.

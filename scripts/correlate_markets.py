@@ -10,12 +10,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 from unipred import UnipredCore
 
 # Database file path
-DB_PATH = "markets.db"
+DB_PATH = "new_markets.db"
 
 def init_db(con: duckdb.DuckDBPyConnection):
     """Initialize the markets table."""
     con.execute("""
-        CREATE OR REPLACE TABLE markets (
+        CREATE TABLE IF NOT EXISTS markets (
             ticker VARCHAR,
             title VARCHAR,
             description VARCHAR,

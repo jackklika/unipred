@@ -9,6 +9,7 @@ use std::sync::Arc;
 
 pub const VECTOR_DIM: i32 = 384; // Using all-MiniLM-L6-v2 dimension
 pub const TABLE_NAME: &str = "markets";
+pub const EVENTS_TABLE_NAME: &str = "events";
 
 pub struct LanceStore {
     conn: Connection,
@@ -23,6 +24,18 @@ pub struct MarketEmbedding {
     pub title: String,
     pub description: String,
     pub outcomes: String,
+}
+
+#[derive(Debug, Clone)]
+pub struct EventEmbedding {
+    pub id: String,
+    pub vector: Vec<f32>,
+    pub ticker: String,
+    pub source: String,
+    pub title: String,
+    pub description: String,
+    pub start_date: String,
+    pub end_date: String,
 }
 
 impl LanceStore {
@@ -49,6 +62,26 @@ impl LanceStore {
             Field::new("title", DataType::Utf8, false),
             Field::new("description", DataType::Utf8, true),
             Field::new("outcomes", DataType::Utf8, true),
+        ]))
+    }
+
+    fn get_events_schema() -> Arc<Schema> {
+        Arc::new(Schema::new(vec![
+            Field::new("id", DataType::Utf8, false),
+            Field::new(
+                "vector",
+                DataType::FixedSizeList(
+                    Arc::new(Field::new("item", DataType::Float32, true)),
+                    VECTOR_DIM,
+                ),
+                false,
+            ),
+            Field::new("ticker", DataType::Utf8, false),
+            Field::new("source", DataType::Utf8, false),
+            Field::new("title", DataType::Utf8, false),
+            Field::new("description", DataType::Utf8, true),
+            Field::new("start_date", DataType::Utf8, true),
+            Field::new("end_date", DataType::Utf8, true),
         ]))
     }
 
@@ -82,9 +115,47 @@ impl LanceStore {
         Ok(())
     }
 
+    /// Add events to the store.
+    pub async fn add_events(&self, events: Vec<EventEmbedding>) -> Result<()> {
+        if events.is_empty() {
+            return Ok(());
+        }
+
+        let schema = Self::get_events_schema();
+        let batch = Self::create_event_record_batch(events, schema.clone())?;
+
+        let batches = RecordBatchIterator::new(
+            vec![Ok(batch)],
+            schema.clone(),
+        );
+
+        let table_exists = self.conn.table_names().execute().await?.contains(&EVENTS_TABLE_NAME.to_string());
+
+        if table_exists {
+            let table = self.conn.open_table(EVENTS_TABLE_NAME).execute().await?;
+            table.add(Box::new(batches)).execute().await?;
+        } else {
+            self.conn
+                .create_table(EVENTS_TABLE_NAME, Box::new(batches))
+                .execute()
+                .await?;
+        }
+
+        Ok(())
+    }
+
     /// Create an IVF-PQ index on the vector column for fast search.
     pub async fn create_index(&self) -> Result<()> {
         let table = self.conn.open_table(TABLE_NAME).execute().await?;
+        table
+            .create_index(&["vector"], Index::Auto)
+            .execute()
+            .await?;
+        Ok(())
+    }
+
+    pub async fn create_events_index(&self) -> Result<()> {
+        let table = self.conn.open_table(EVENTS_TABLE_NAME).execute().await?;
         table
             .create_index(&["vector"], Index::Auto)
             .execute()
@@ -140,6 +211,51 @@ impl LanceStore {
         Ok(markets)
     }
 
+    /// Search for similar events using a query vector.
+    pub async fn search_events(&self, query_vector: Vec<f32>, limit: usize) -> Result<Vec<EventEmbedding>> {
+        let table = self.conn.open_table(EVENTS_TABLE_NAME).execute().await?;
+        
+        if query_vector.len() != VECTOR_DIM as usize {
+            anyhow::bail!("Query vector dimension mismatch. Expected {}, got {}", VECTOR_DIM, query_vector.len());
+        }
+
+        let results = table
+            .query()
+            .nearest_to(query_vector)?
+            .limit(limit)
+            .execute()
+            .await?
+            .try_collect::<Vec<_>>()
+            .await?;
+
+        let mut events = Vec::new();
+
+        for batch in results {
+            let ids = batch.column(0).as_any().downcast_ref::<StringArray>().unwrap();
+            let tickers = batch.column(2).as_any().downcast_ref::<StringArray>().unwrap();
+            let sources = batch.column(3).as_any().downcast_ref::<StringArray>().unwrap();
+            let titles = batch.column(4).as_any().downcast_ref::<StringArray>().unwrap();
+            let descriptions = batch.column(5).as_any().downcast_ref::<StringArray>().unwrap();
+            let start_dates = batch.column(6).as_any().downcast_ref::<StringArray>().unwrap();
+            let end_dates = batch.column(7).as_any().downcast_ref::<StringArray>().unwrap();
+
+            for i in 0..batch.num_rows() {
+                events.push(EventEmbedding {
+                    id: ids.value(i).to_string(),
+                    vector: vec![],
+                    ticker: tickers.value(i).to_string(),
+                    source: sources.value(i).to_string(),
+                    title: titles.value(i).to_string(),
+                    description: descriptions.value(i).to_string(),
+                    start_date: start_dates.value(i).to_string(),
+                    end_date: end_dates.value(i).to_string(),
+                });
+            }
+        }
+
+        Ok(events)
+    }
+
     fn create_record_batch(markets: Vec<MarketEmbedding>, schema: Arc<Schema>) -> Result<RecordBatch> {
         let num_rows = markets.len();
 
@@ -190,6 +306,64 @@ impl LanceStore {
                 Arc::new(title_array),
                 Arc::new(description_array),
                 Arc::new(outcomes_array),
+            ],
+        )?)
+    }
+
+    fn create_event_record_batch(events: Vec<EventEmbedding>, schema: Arc<Schema>) -> Result<RecordBatch> {
+        let num_rows = events.len();
+
+        let mut id_builder = Vec::with_capacity(num_rows);
+        let mut vector_values = Vec::with_capacity(num_rows * VECTOR_DIM as usize);
+        let mut ticker_builder = Vec::with_capacity(num_rows);
+        let mut source_builder = Vec::with_capacity(num_rows);
+        let mut title_builder = Vec::with_capacity(num_rows);
+        let mut description_builder = Vec::with_capacity(num_rows);
+        let mut start_date_builder = Vec::with_capacity(num_rows);
+        let mut end_date_builder = Vec::with_capacity(num_rows);
+
+        for e in events {
+            if e.vector.len() != VECTOR_DIM as usize {
+                anyhow::bail!("Vector dimension mismatch for event {}", e.ticker);
+            }
+            id_builder.push(e.id);
+            vector_values.extend(e.vector);
+            ticker_builder.push(e.ticker);
+            source_builder.push(e.source);
+            title_builder.push(e.title);
+            description_builder.push(e.description);
+            start_date_builder.push(e.start_date);
+            end_date_builder.push(e.end_date);
+        }
+
+        let id_array = StringArray::from(id_builder);
+        
+        let vector_data = Float32Array::from(vector_values);
+        let vector_array = FixedSizeListArray::try_new(
+            Arc::new(Field::new("item", DataType::Float32, true)),
+            VECTOR_DIM,
+            Arc::new(vector_data),
+            None,
+        )?;
+
+        let ticker_array = StringArray::from(ticker_builder);
+        let source_array = StringArray::from(source_builder);
+        let title_array = StringArray::from(title_builder);
+        let description_array = StringArray::from(description_builder);
+        let start_date_array = StringArray::from(start_date_builder);
+        let end_date_array = StringArray::from(end_date_builder);
+
+        Ok(RecordBatch::try_new(
+            schema,
+            vec![
+                Arc::new(id_array),
+                Arc::new(vector_array),
+                Arc::new(ticker_array),
+                Arc::new(source_array),
+                Arc::new(title_array),
+                Arc::new(description_array),
+                Arc::new(start_date_array),
+                Arc::new(end_date_array),
             ],
         )?)
     }

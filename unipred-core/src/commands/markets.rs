@@ -70,6 +70,7 @@ impl Command for FetchMarkets {
 
                 let unified_markets = markets
                     .into_iter()
+                    .filter(|m| m.mve_collection_ticker.is_none())
                     .map(|m| FetchedMarket {
                         ticker: m.ticker.clone(),
                         title: m.title,
