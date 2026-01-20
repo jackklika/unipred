@@ -1,3 +1,12 @@
+## ⚠️ Disclaimer ⚠️ 
+
+This is an unfinished project, and will probably stay unfinished and unmaintained.
+
+While I think this is a good architecture (rust core with python + protobufs) for a scalable uni-market prediction market library, most of this is AI slop which is not tested to be useful. 
+
+It was a good idea, but I cannot find a good reason to spend any more time on this. Do with it what you will.
+---
+
 # Unipred
 
 Unified python library for prediction market exchange operations.
